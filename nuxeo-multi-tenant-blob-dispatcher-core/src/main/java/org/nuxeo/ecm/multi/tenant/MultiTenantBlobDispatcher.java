@@ -30,7 +30,7 @@ import org.nuxeo.ecm.core.blob.DefaultBlobDispatcher;
 import org.nuxeo.ecm.core.model.Document;
 
 /**
- * Default blob dispatcher, that uses the repository name as the blob provider.
+ * Multi-Tenant blob dispatcher, that uses the repository name as the blob provider.
  * <p>
  * Alternatively, it can be configured through properties to dispatch to a blob provider based on document properties
  * instead of the repository name.
