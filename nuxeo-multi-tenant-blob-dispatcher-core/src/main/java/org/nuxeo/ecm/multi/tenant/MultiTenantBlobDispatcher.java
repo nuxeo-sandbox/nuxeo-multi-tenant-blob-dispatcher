@@ -20,12 +20,10 @@
 package org.nuxeo.ecm.multi.tenant;
 
 import java.io.Serializable;
-import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.Blob;
-import org.nuxeo.ecm.core.api.model.PropertyNotFoundException;
 import org.nuxeo.ecm.core.blob.DefaultBlobDispatcher;
 import org.nuxeo.ecm.core.model.Document;
 
@@ -41,7 +39,7 @@ import org.nuxeo.ecm.core.model.Document;
  * {@code blob:length} or {@code blob:xpath}. Comma-separated clauses are ANDed together. The special name
  * {@code default} defines the default provider, and must be present.
  * <p>
- * Binaries may be stored by tenant with use of the {@code ecm:tenant} property.  Tenant name is case sensitive.
+ * Binaries may be stored by tenant with use of the {@code ecm:tenant} property. Tenant name is case sensitive.
  * <p>
  * Available operators between property and value are =, !=, &lt, > and ~. The operators &lt; and > work with integer
  * values. The operator ~ does glob matching using {@code ?} to match a single arbitrary character, and {@code *} to
@@ -73,95 +71,13 @@ public class MultiTenantBlobDispatcher extends DefaultBlobDispatcher {
 
     protected static final String TENANT_XPATH = "tenantconfig:tenantId";
 
-    /**
-     * Overridden method for {@link DefaultBlobDispatcher} that dispatches based on parent tenant
-     */
     @Override
-    protected String getProviderId(Document doc, Blob blob, String blobXPath) {
-        if (useRepositoryName) {
-            return doc.getRepositoryName();
+    protected Object getValue(Document doc, Blob blob, String blobXPath, Clause clause) {
+        String xpath = clause.xpath;
+        if (xpath.equals(TENANT_NAME)) {
+            return findTenant(doc, clause);
         }
-        for (Rule rule : rules) {
-            boolean allClausesMatch = true;
-            for (Clause clause : rule.clauses) {
-                String xpath = clause.xpath;
-                Object value;
-                if (xpath.equals(REPOSITORY_NAME)) {
-                    value = doc.getRepositoryName();
-                } else if (xpath.equals(TENANT_NAME)) {
-                    value = findTenant(doc, clause);
-                } else if (xpath.startsWith(BLOB_PREFIX)) {
-                    switch (xpath.substring(BLOB_PREFIX.length())) {
-                    case BLOB_NAME:
-                        value = blob.getFilename();
-                        break;
-                    case BLOB_MIME_TYPE:
-                        value = blob.getMimeType();
-                        break;
-                    case BLOB_ENCODING:
-                        value = blob.getEncoding();
-                        break;
-                    case BLOB_DIGEST:
-                        value = blob.getDigest();
-                        break;
-                    case BLOB_LENGTH:
-                        value = Long.valueOf(blob.getLength());
-                        break;
-                    case BLOB_XPATH:
-                        value = blobXPath;
-                        break;
-                    default:
-                        log.error("Invalid dispatcher configuration property name: " + xpath);
-                        continue;
-                    }
-                } else {
-                    try {
-                        value = doc.getValue(xpath);
-                    } catch (PropertyNotFoundException e) {
-                        try {
-                            value = doc.getPropertyValue(xpath);
-                        } catch (PropertyNotFoundException e2) {
-                            allClausesMatch = false;
-                            break;
-                        }
-                    }
-                }
-                boolean match;
-                switch (clause.op) {
-                case EQ:
-                    match = String.valueOf(value).equals(clause.value);
-                    break;
-                case NEQ:
-                    match = !String.valueOf(value).equals(clause.value);
-                    break;
-                case LT:
-                    if (value == null) {
-                        value = Long.valueOf(0);
-                    }
-                    match = ((Long) value).compareTo((Long) clause.value) < 0;
-                    break;
-                case GT:
-                    if (value == null) {
-                        value = Long.valueOf(0);
-                    }
-                    match = ((Long) value).compareTo((Long) clause.value) > 0;
-                    break;
-                case GLOB:
-                    match = ((Pattern) clause.value).matcher(String.valueOf(value)).matches();
-                    break;
-                default:
-                    throw new AssertionError("notreached");
-                }
-                allClausesMatch = allClausesMatch && match;
-                if (!allClausesMatch) {
-                    break;
-                }
-            }
-            if (allClausesMatch) {
-                return rule.providerId;
-            }
-        }
-        return defaultProviderId;
+        return super.getValue(doc, blob, blobXPath, clause);
     }
 
     protected Serializable getTenant(Document doc) {

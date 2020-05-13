@@ -4,6 +4,8 @@
 
 Multi-Tenant blob dispatcher to store blobs by tenant identifier.
 
+# This version requires at least 10.10-HF26 of the Nuxeo Platform
+
 ## Build and Install
 
 Build with maven (at least 3.3)
