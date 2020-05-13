@@ -19,8 +19,6 @@
  */
 package org.nuxeo.ecm.multi.tenant;
 
-import java.io.Serializable;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.Blob;
@@ -80,15 +78,15 @@ public class MultiTenantBlobDispatcher extends DefaultBlobDispatcher {
         return super.getValue(doc, blob, blobXPath, clause);
     }
 
-    protected Serializable getTenant(Document doc) {
+    protected Object getTenant(Document doc) {
         if (doc != null && doc.hasFacet(TENANT_FACET)) {
-            return doc.getPropertyValue(TENANT_XPATH);
+            return doc.getValue(TENANT_XPATH);
         }
         return null;
     }
 
-    protected Serializable findTenant(Document doc, Clause clause) {
-        Serializable tenant = getTenant(doc);
+    protected Object findTenant(Document doc, Clause clause) {
+        Object tenant = getTenant(doc);
         while (tenant == null && doc != null) {
             doc = doc.getParent();
             tenant = getTenant(doc);
